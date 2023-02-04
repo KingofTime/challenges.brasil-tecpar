@@ -2,26 +2,25 @@
 
 namespace App\Service;
 
-use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\String\ByteString;
 use function Symfony\Component\String\u;
 
 class HashManager
 {
     private String $hash;
-    private String $key;
+    private String $keyFound;
     private int $amountTries=0;
 
-    public function generate(String $text)
+    public function generate(String $inputString)
     {
         do {
             $key = ByteString::fromRandom(8)->toString();
-            $hash = md5($text.$key);
+            $hash = md5($inputString.$key);
 
             $this->amountTries++;
         } while(!u($hash)->startsWith('0000'));
 
-        $this->key = $key;
+        $this->keyFound = $key;
         $this->hash = $hash;
     }
 
@@ -30,9 +29,9 @@ class HashManager
         return $this->hash;
     }
 
-    public function getKey(): String
+    public function getKeyFound(): String
     {
-        return $this->key;
+        return $this->keyFound;
     }
 
     public function getAmountTries(): int
