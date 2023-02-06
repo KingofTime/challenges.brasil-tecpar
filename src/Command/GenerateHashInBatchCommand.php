@@ -4,6 +4,7 @@ namespace App\Command;
 
 use App\Entity\Hash;
 use App\Repository\HashRepository;
+use App\Service\HashManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,17 +23,20 @@ class GenerateHashInBatchCommand extends Command
 {
     private $client;
     private $router;
+    private $hashManager;
+
     protected static $defaultName = 'avato:test';
-    private $hashRepository;
+
 
     public function __construct(
         HttpClientInterface $client,
         UrlGeneratorInterface $router,
-        HashRepository $hashRepository)
+        HashManager $hashManager
+    )
     {
         $this->client = $client;
         $this->router = $router;
-        $this->hashRepository = $hashRepository;
+        $this->hashManager = $hashManager;
 
         parent::__construct();
     }
@@ -57,6 +61,7 @@ class GenerateHashInBatchCommand extends Command
                 $response = $this->client->request('POST', $this->router->generate('hash_create', [
                     'inputString' => $inputString
                 ], UrlGeneratorInterface::ABSOLUTE_URL));
+
                 $content = $response->toArray();
 
             } catch(HttpExceptionInterface $exception) {
@@ -65,14 +70,14 @@ class GenerateHashInBatchCommand extends Command
                 sleep($sleepingTime);
 
             } finally {
-                $this->saveInDatabase(
-                    $batch,
-                    $content['hash'],
-                    $content['amountTries'],
-                    $blockNumber,
-                    $inputString,
-                    $content['keyFound']
-                );
+                $this->hashManager->setBatch($batch);
+                $this->hashManager->setHash($content['hash']);
+                $this->hashManager->setKeyFound($content['keyFound']);
+                $this->hashManager->setAmountTries($content['amountTries']);
+                $this->hashManager->setInputString($inputString);
+                $this->hashManager->setBlockNumber($blockNumber);
+
+                $this->hashManager->save();
 
                 $inputString = $content['hash'];
                 $blockNumber++;
@@ -80,25 +85,5 @@ class GenerateHashInBatchCommand extends Command
         }
 
         return Command::SUCCESS;
-    }
-
-    private function saveInDatabase(
-        \DateTime $batch,
-        String $hashValue,
-        int $amountTries,
-        int $blockNumber,
-        String $inputString,
-        String $keyFound
-    )
-    {
-        $hash = new Hash();
-        $hash->setBatch($batch);
-        $hash->setHash($hashValue);
-        $hash->setAmountTries($amountTries);
-        $hash->setBlockNumber($blockNumber);
-        $hash->setInputString($inputString);
-        $hash->setKeyFound($keyFound);
-
-        $this->hashRepository->add($hash, True);
     }
 }

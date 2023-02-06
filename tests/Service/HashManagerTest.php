@@ -2,31 +2,62 @@
 
 namespace App\Tests\Service;
 
+use App\Entity\Hash;
 use App\Service\HashManager;
-use PHPUnit\Framework\TestCase;
-use function PHPUnit\Framework\assertTrue;
+use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-class HashManagerTest extends TestCase
+class HashManagerTest extends KernelTestCase
 {
     public function testHashGeneration(): void
     {
-        $text = "abacate maduro";
-        $hashManager = new HashManager();
-        $hashManager->generate($text);
+        self::bootKernel();
 
-        $expectedHash = md5($text.$hashManager->getKey());
+        $container = static::getContainer();
 
-        assertTrue($expectedHash == $hashManager->getHash());
+        $hashManager = $container->get(HashManager::class);
+        $inputString = "abacate maduro";
+
+        $hashManager->generate($inputString);
+        $expectedHash = md5($inputString.$hashManager->getKeyFound());
+
+        self::assertTrue($expectedHash == $hashManager->getHash());
     }
 
     public function testNewHashInThePattern(): void
     {
-        $text = "abacate maduro";
-        $hashManager = new HashManager();
-        $hashManager->generate($text);
+        $container = static::getContainer();
 
+        $hashManager = $container->get(HashManager::class);
+        $inputString = "abacate maduro";
+
+        $hashManager->generate($inputString);
         $hash = $hashManager->getHash();
 
-        assertTrue(substr($hash, 0, 4) == '0000');
+        self::assertTrue(substr($hash, 0, 4) == '0000');
+    }
+
+    public function testSaveHashInDatabase(): void
+    {
+        $container = static::getContainer();
+
+        $hashManager = $container->get(HashManager::class);
+        $hashRepository = ($container->get(ManagerRegistry::class))
+            ->getRepository(Hash::class);
+
+        $batch = new \DateTime();
+        $inputString = "abacate maduro";
+
+        $hashManager->generate($inputString);
+        $hashManager->setBatch($batch);
+        $hashManager->setBlockNumber(1);
+        $hashManager->setInputString($inputString);
+
+        $hashManager->save();
+
+        $hash = $hashRepository->findBy(['inputString' => $hashManager->getInputString()])[0];
+
+        self::assertEquals($hash->getHash(), $hashManager->getHash());
+        self::assertEquals($hash->getKeyFound(), $hashManager->getKeyFound());
     }
 }
