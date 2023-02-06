@@ -17,23 +17,33 @@ use Symfony\Component\Routing\Annotation\Route;
 class HashController extends AbstractController
 {
     /**
-     * @Route("/{text}", name="create", methods={"POST"})
+     * @Route("/{inputString}", name="create", methods={"POST"})
      */
-    public function create(String $text, Request $request, RateLimiterFactory $createHashLimiter): Response
+    public function create(
+        String $inputString,
+        Request $request,
+        RateLimiterFactory $createHashLimiter,
+        HashManager $hashManager
+    ): Response
     {
         $limiter = $createHashLimiter->create($request->getClientIp());
+        $limit = $limiter->consume();
+        $headers = [
+            'X-RateLimit-Remaining' => $limit->getRemainingTokens(),
+            'X-RateLimit-Retry-After' => $limit->getRetryAfter()->diff(new \DateTime())->s,
+            'X-RateLimit-Limit' => $limit->getLimit(),
+        ];
 
-        if(!$limiter->consume(1)->isAccepted()) {
-            throw new TooManyRequestsHttpException();
+        if(!$limit->isAccepted()) {
+            return new JsonResponse("Too Many Attempts", Response::HTTP_TOO_MANY_REQUESTS, $headers);
         }
 
-        $hashManager = new HashManager();
-        $hashManager->generate($text);
+        $hashManager->generate($inputString);
 
         return new JsonResponse([
             "hash" => $hashManager->getHash(),
-            "key" => $hashManager->getKey(),
+            "keyFound" => $hashManager->getKeyFound(),
             "amountTries" => $hashManager->getAmountTries()
-        ]);
+        ], Response::HTTP_OK, $headers);
     }
 }
