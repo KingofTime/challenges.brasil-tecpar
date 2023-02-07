@@ -2,12 +2,14 @@
 
 namespace App\Controller;
 
+use App\Repository\HashRepository;
+use App\Resource\HashCollection;
 use App\Service\HashManager;
+use App\Service\Parameters;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -16,6 +18,25 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class HashController extends AbstractController
 {
+
+    /**
+     * @Route("/", name="index", methods={"GET"})
+     */
+    public function index(Request $request, HashRepository $hashRepository)
+    {
+        $parameters = new Parameters($request);
+
+        $collection = $hashRepository->paginate(
+            $parameters->getFilters(),
+            $parameters->getPerPage(),
+            $parameters->getPage()
+        );
+
+        $hashCollection = new HashCollection($collection);
+
+        return new JsonResponse($hashCollection->toArray(), 200);
+    }
+
     /**
      * @Route("/{inputString}", name="create", methods={"POST"})
      */
