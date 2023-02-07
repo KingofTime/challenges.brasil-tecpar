@@ -11,8 +11,6 @@ class HashManagerTest extends KernelTestCase
 {
     public function testHashGeneration(): void
     {
-        self::bootKernel();
-
         $container = static::getContainer();
 
         $hashManager = $container->get(HashManager::class);

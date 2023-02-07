@@ -4,6 +4,8 @@ namespace App\Repository;
 
 use App\Entity\Hash;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Collections\Criteria;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -19,6 +21,21 @@ class HashRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Hash::class);
+    }
+
+    public function paginate(array $filter, int $perPage, int $page): array
+    {
+        $offset = ($page - 1) * $perPage;
+        $criteria = Criteria::create();
+
+        if(array_key_exists('amount_tries', $filter)) {
+            $criteria->where(Criteria::expr()->lte('amountTries', $filter['amount_tries']));
+        }
+
+        $criteria->setMaxResults($perPage)
+            ->setFirstResult($offset);
+
+        return $this->matching($criteria)->toArray();
     }
 
     public function add(Hash $entity, bool $flush = false): void
