@@ -1,0 +1,55 @@
+version: '3'
+
+services:
+  database:
+    build:
+      context: ./build/database
+    environment:
+      - MYSQL_USER=${DATABASE_USER}
+      - MYSQL_PASSWORD=${DATABASE_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DATABASE_ROOT_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./build/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - dbdata:/var/lib/mysql
+    command: mysqld --init-file="/docker-entrypoint-initdb.d/init.sql"
+    networks:
+      - symfony
+
+  php-fpm:
+    build:
+      context: ./build/php-fpm
+    depends_on:
+      - database
+    environment:
+      - APP_ENV=${APP_ENV}
+      - APP_SECRET=${APP_SECRET}
+      - DATABASE_URL=mysql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:3306/${DATABASE_NAME}?serverVersion=5.7
+    volumes:
+      - .:/var/www:rw
+    networks:
+      - symfony
+
+  nginx:
+    build:
+      context: ./build/nginx
+    volumes:
+      - .:/var/www:rw
+      - ./build/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./build/nginx/sites/:/etc/nginx/sites-available
+      - ./build/nginx/conf.d/:/etc/nginx/conf.d
+      - ./logs:/var/log
+    depends_on:
+      - php-fpm
+    ports:
+      - "8081:80"
+    networks:
+      - symfony
+
+volumes:
+  dbdata:
+
+networks:
+  symfony:
+    driver: bridge

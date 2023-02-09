@@ -29,7 +29,7 @@ class HashRepository extends ServiceEntityRepository
         $criteria = Criteria::create();
 
         if(array_key_exists('amount_tries', $filter)) {
-            $criteria->where(Criteria::expr()->lte('amountTries', $filter['amount_tries']));
+            $criteria->where(Criteria::expr()->lt('amountTries', $filter['amount_tries']));
         }
 
         $criteria->setMaxResults($perPage)
