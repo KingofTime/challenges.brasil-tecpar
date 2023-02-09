@@ -44,7 +44,7 @@ make build
 ## Executando a aplicação
 Vamos tratar em como executar cada requisito da aplicação
 
-Obs: Temos uma documentação no Postman para auxiliar na execução das rotas, para acessar clique aqui
+Obs: Temos uma documentação no Postman para auxiliar na execução das rotas, para acessar clique [aqui](https://documenter.getpostman.com/view/12839634/2s935smM2j)
 
 ****
 **Rota para geração de hash**
@@ -76,9 +76,31 @@ make shell
 php bin/console avato:test <string> --requests=<numero de requests>
 ```
 
-Para consultar o banco e vê os resultados acesse aqui
+**Banco de dados**
+
+Para consultar o banco de dados, use o comando
+```
+docker compose exec database sh
+mysql -u app -p
+```
+
+Ou com o Makefile
+```
+make db
+```
+Após isso digite a senha (presente no .env)
+
+Abaixo temos uma dica de sql para realizar a consulta.
+
+```
+use brasiltecparchallenge;
+select * from hash;
+```
+Obs: A visualização no terminal pode acabar resumindo um pouco os dados, para grande quantidade de dados usar um where ou fazer a consulta por uma  IDE pode ser melhor
+
 
 **Rota de retorno dos resultados**
+
 A rota para gerar o hash pode ser acessado pelo curl usando o comando:
 ```
 curl --location --request GET 'http://localhost:8000/hash'
@@ -108,28 +130,6 @@ Ou com o Makefile
 ```
 make migrate
 ```
-
-**Banco de dados**
-
-Para consultar o banco de dados, use o comando
-```
-docker compose exec database sh
-mysql -u app -p
-```
-
-Ou com o Makefile
-```
-make db
-```
-Após isso digite a senha (presente no .env)
-
-Abaixo temos uma dica de sql para realizar a consulta.
-
-```
-use brasiltecparchallenge;
-select * from hash;
-```
-Obs: A visualização no terminal pode acabar resumindo um pouco os dados, para grande quantidade de dados usar um where ou fazer a consulta por uma  IDE pode ser melhor
 
 **Testando a aplicação**
 
